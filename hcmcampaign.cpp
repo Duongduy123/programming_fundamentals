@@ -1,18 +1,14 @@
 #include "hcmcampaign.h"
 
-using namespace std;
 ////////////////////////////////////////////////////////////////////////
 /// STUDENT'S ANSWER BEGINS HERE
 ////////////////////////////////////////////////////////////////////////
+using namespace std;
 
 // Task 3.1: Unit class
 Unit::Unit(int quantity, int weight, Position pos) : quantity(quantity), weight(weight), pos(pos) {}
 
 // Unit's methods
-int Unit::getAttackScore() {
-    return 0;
-}
-
 Position Unit::getCurrentPosition() const {
     return Position(0,0);
 }
@@ -231,17 +227,9 @@ void LiberationArmy::fight(Army *enemy, bool defense = false) {
     }
 
     // get LF and EXP of enemy's army (ARVN's army)
-    int enemyLF = 0, enemyEXP = 0;
+    int enemyLF = enemy->getLF(), enemyEXP = enemy->getEXP();
+    cout << "enemy indices: " << enemyLF << " " << enemyEXP << endl;
     UnitList *enemyUnitList = enemy->getUnitList();
-    current = enemyUnitList->getHead();
-    while (current) {
-        cout << current->val->str() << endl;
-        int score = current->val->getAttackScore();
-        if (dynamic_cast<Infantry *>(current->val)) 
-            enemyEXP += score;
-        else enemyLF += current->val->getAttackScore();
-        current = current->next;
-    }
 
     cout << endl;
     cout << "get liber and enemy successfully!\n";
@@ -266,16 +254,18 @@ void LiberationArmy::fight(Army *enemy, bool defense = false) {
                 // update score and EXP, LF of the liberation army
             }
             delete current;
+            this->calculateEXP();
+            this->calculateLF();
             return;
         }
 
         if (tmpEXP > enemyEXP) {
             // choose combination A
-            cout << "Looking for combination A:\n";
+            cout << "\nLooking for combination A:\n";
             int minD = 1000, pos = sumEXP.size() - 1;
             for (int i = (int) sumEXP.size() - 1; i >= 0; i--) {
                 if (sumEXP[i].sum > enemyEXP) {
-                    if (sumEXP[i].sum - enemyEXP > minD) {
+                    if (sumEXP[i].sum - enemyEXP < minD) {
                         pos = i;
                         minD = sumEXP[i].sum - enemyEXP;
                     }
@@ -286,17 +276,16 @@ void LiberationArmy::fight(Army *enemy, bool defense = false) {
                 lUnitList->remove(sumEXP[pos].unitList[i]);
             // delete unit in enemy's unit and insert them to lUnitList,
             // adjust lUnitList's units if necessary
-            unitNode *headInfantry = lUnitList->getHead();
+            unitNode *headInfantry = enemyUnitList->getHead();
             while (headInfantry && dynamic_cast<Infantry *>(headInfantry->val)) {
                 unitNode *removeNode = headInfantry;
                 headInfantry = headInfantry->next;
                 lUnitList->insert(removeNode->val);
                 enemyUnitList->remove(removeNode->val);
-                delete removeNode;
             }
         }
         else {
-            cout << "Looking for combintion A failed, use army's all force!\n";
+            cout << "\nLooking for combintion A failed, use army's all force!\n";
             // use all force (this->getEXP()) to check, remove all units of lArmy, replace by ARVN
             cout << "Amry all forces: " << lUnitList->str() << endl;
             while (lUnitList->getHead() && dynamic_cast<Infantry *>(lUnitList->getHead()->val)) {
@@ -317,11 +306,11 @@ void LiberationArmy::fight(Army *enemy, bool defense = false) {
 
         if (tmpLF > enemyLF) {
             // choose combination B
-            cout << "Looking for combination B:\n";
+            cout << "\nLooking for combination B:\n";
             int minD = 1000, pos = sumLF.size() - 1;
             for (int i = (int) sumLF.size() - 1; i >= 0; i--) {
                 if (sumLF[i].sum > enemyLF) {
-                    if (sumLF[i].sum - enemyLF > minD) {
+                    if (sumLF[i].sum - enemyLF < minD) {
                         pos = i;
                         minD = sumLF[i].sum - enemyLF;
                     }
@@ -332,7 +321,7 @@ void LiberationArmy::fight(Army *enemy, bool defense = false) {
                 lUnitList->remove(sumLF[pos].unitList[i]);
             // delete unit in enemy's unit and insert them to lUnitList,0
             // adjust lUnitList's units if necessary
-            unitNode *headInfantry = lUnitList->getHead();
+            unitNode *headInfantry = enemyUnitList->getHead();
             while (headInfantry && dynamic_cast<Infantry *>(headInfantry->val)) {
                 headInfantry = headInfantry->next;
             }
@@ -341,11 +330,10 @@ void LiberationArmy::fight(Army *enemy, bool defense = false) {
                 headInfantry = headInfantry->next;
                 lUnitList->insert(removeNode->val);
                 enemyUnitList->remove(removeNode->val);
-                delete removeNode;
             }
         }   
         else { 
-            cout << "Looking for combintion B failed, use army's all force!\n";
+            cout << "\nLooking for combintion B failed, use army's all force!\n";
             unitNode *headVehicle = lUnitList->getHead();
             while (headVehicle && dynamic_cast<Infantry *>(headVehicle->val)) {
                 headVehicle = headVehicle->next;
@@ -354,10 +342,9 @@ void LiberationArmy::fight(Army *enemy, bool defense = false) {
             while (headVehicle) {
                 unitNode *removeNode = headVehicle;
                 headVehicle = headVehicle->next;
-                lUnitList->remove(removeNode->val);
-                delete removeNode;                
+                lUnitList->remove(removeNode->val);        
             }
-            cout << "\nlUnitList removes vehicles\n";
+            cout << endl << "lUnitList removes vehicles\n";
             cout << lUnitList->str() << endl;
             
             headVehicle = enemyUnitList->getHead();
@@ -392,7 +379,7 @@ void LiberationArmy::fight(Army *enemy, bool defense = false) {
 
 void LiberationArmy::fightDefense(Army *enemy) {
     if (this->getEXP() >= enemy->getEXP() && this->getLF() >= enemy->getLF()) {
-    // victory belongs to liberation army
+        cout << "victory belongs to liberation army\n";
         return;
     }
 
@@ -458,6 +445,34 @@ ARVN::ARVN(Unit **unitArray, int size, string name, BattleField *battleField) :
 
 void ARVN::fight(Army *enemy, bool defense = false) {
     cout << "ARVN army is fighting!" << endl;
+    if (!defense) {
+        cout << "ARVN army: " << this->getEXP() << " " << this->getLF() << endl;
+        cout << "ARVN army: " << this->getUnitList()->str() << endl;
+        cout << "enemy army: " << enemy->getEXP() << " " << enemy->getLF() << endl;
+        cout << "enemy army: " << enemy->getUnitList()->str() << endl;
+        // in this fight (for this description only), the enemy of ARVN (liberation army) WILL NOT lose, even at defense state
+        // ARVN will lose, and each unit will lose 20% of its quantity
+        // delete any unit whose quantity is 1
+        unitNode *current = this->getUnitList()->getHead();
+        while (current) {
+            if (current->val->getQuantity() == 1) {
+                this->getUnitList()->remove(current->val);
+                current = this->getUnitList()->getHead();
+            }
+            else {
+                current->val->updateQuantity(ceil((float) current->val->getQuantity() * 0.8));
+                current = current->next;
+            }
+        }
+        this->calculateEXP();
+        this->calculateLF();
+        cout << "ARVN army: " << this->getEXP() << " " << this->getLF() << endl;    
+        cout << "ARVN army: " << this->getUnitList()->str() << endl;
+        cout << "end of ARVN army fight\n";
+        return;
+    }
+    // case 2: defense = true
+    enemy->fight(this, false);
 }
 
 string ARVN::str() const {
@@ -494,8 +509,10 @@ bool UnitList::insert(Unit *unit) {
             while (current && dynamic_cast<Infantry *>(current->val)) {
                 if (newUnit->val->getType() == current->val->getType() && newUnit->val->getWeight() == current->val->getWeight()) {
                     current->val->updateQuantity(current->val->getQuantity() + newUnit->val->getQuantity());
-                    delete newUnit;
                     cout << "Found same type of infantry unit, updated quantity.\n";
+                    cout << current->val->str() << endl;
+                    cout << newUnit->val->str() << endl;
+                    delete newUnit;
                     return true;
                 }
                 current = current->next;
@@ -511,8 +528,10 @@ bool UnitList::insert(Unit *unit) {
                 if (dynamic_cast<Vehicle *>(current->val)) {
                     if (newUnit->val->getType() == current->val->getType() && newUnit->val->getWeight() == current->val->getWeight()) {
                         current->val->updateQuantity(current->val->getQuantity() + newUnit->val->getQuantity());
-                        delete newUnit;
                         cout << "Found same type of vehicle unit, updated quantity.\n";
+                        cout << current->val->str() << endl;
+                        cout << newUnit->val->str() << endl;
+                        delete newUnit;
                         return true;
                     }
                 }
@@ -588,7 +607,7 @@ void UnitList::getCapacity(int LF, int EXP) {
 
 void UnitList::remove(Unit *unit) {
     cout << "from list: " << this->str() << endl;
-    cout << "Remove: " << unit->str() << endl;
+    cout << "Remove: " << unit->str() << " " << unit->getAttackScore() << endl;
     cout << "size: " << this->size << endl;
     if (this->head == nullptr) {
         cout << "List is empty!\n";
